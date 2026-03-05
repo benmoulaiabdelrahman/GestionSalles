@@ -1,128 +1,60 @@
 # GestionSalles
 
-Java desktop application for managing university room reservations, schedules, users, and conflict-free allocation.
+GestionSalles is a Java desktop project focused on organizing university room management through role-based workflows and reservation control.
 
-## Features
+## Project Overview
 
-- Role-based dashboards (`Admin`, `Chef Departement`, `Enseignant`)
-- Room reservation and schedule management
-- Conflict detection for overlapping reservations
-- User, department, bloc, and level management
-- Authentication, remember-me sessions, and password recovery
-- Audit/security-oriented session handling
+The application models the internal operations of an academic institution where:
 
-## Tech Stack
+- administrators supervise global configuration and monitoring,
+- department heads manage local planning and reservations,
+- teachers consult schedules and assigned room usage.
 
-- Java 17
-- Maven
-- MySQL
-- Swing (desktop UI)
+It includes business logic for reservation conflict detection, authentication/session checks, and structured data access for academic entities (departments, blocs, levels, rooms, users, and reservations).
 
-## Prerequisites
+## Main Functional Areas
 
-- JDK 17+
-- Maven 3.8+
-- MySQL 8+
+- Role-based dashboards and navigation
+- Reservation lifecycle and timetable visualization
+- Conflict detection for overlapping room allocations
+- Academic structure management (department, bloc, level, room)
+- User/account flows including password recovery and session validation
+- Audit/security-oriented service layer behavior
 
-## Configuration
+## Technical Context
 
-The app expects database/email settings from environment variables (preferred) with placeholders in resource files.
+- Language: Java
+- Build system: Maven
+- Database model: MySQL schema + SQL migration/seed scripts
+- UI: Swing desktop application
+- Layering: `views`, `services`, `dao`, `models`, `utils`
 
-Required environment variables:
+## Repository Structure
 
-- `DB_URL` (optional if using default in properties)
-- `DB_USER`
-- `DB_PASSWORD`
-- `GESTION_SALLES_EMAIL_SENDER`
-- `GESTION_SALLES_EMAIL_APP_PASSWORD`
-- `GESTION_SALLES_SECRET` (recommended)
+- `src/main/java/com/gestion/salles`: application source code
+- `src/main/resources`: non-code resources and configuration templates
+- `src/test/java/com/gestion/salles`: tests
+- `db/`: SQL schema, migration, and seed scripts
+- `docs/`: project documentation
 
-See docs for details:
+## Documentation References
 
 - `docs/database.md`
 - `docs/security-and-session.md`
 - `docs/packaging.md`
-
-## Database Setup
-
-Create and initialize the database using one of these:
-
-- `db/schema.sql`
-- `gestion_salles.sql`
-
-Optional seed data:
-
-- `db/seed/minimal_seed.sql`
-
-## Build and Run
-
-Build:
-
-```bash
-mvn clean package
-```
-
-Run tests:
-
-```bash
-mvn test
-```
-
-Run app (from Maven):
-
-```bash
-mvn exec:java -Dexec.mainClass="com.gestion.salles.MainApp"
-```
-
-If you package/distribute, see scripts and packaging docs:
-
-- `src/main/resources/scripts/gestionsalles.sh`
-- `scripts/health-check.sh`
-- `src/main/assembly/zip.xml`
+- `APP_FULL_REFERENCE.md`
 
 ## Screenshots
 
-Place screenshots in `docs/screenshots/` using these filenames:
-
-- `login.png`
-- `admin-dashboard.png`
-- `reservation-management.png`
-- `schedule-view.png`
-
-Then they will render automatically below:
-
-### Login
-
 ![Login](docs/screenshots/login.png)
-
-### Admin Dashboard
-
 ![Admin Dashboard](docs/screenshots/admin-dashboard.png)
-
-### Reservation Management
-
 ![Reservation Management](docs/screenshots/reservation-management.png)
-
-### Schedule View
-
 ![Schedule View](docs/screenshots/schedule-view.png)
 
-## Project Structure
+## Copyright and Usage
 
-```text
-src/main/java/com/gestion/salles
-  ├── dao
-  ├── database
-  ├── models
-  ├── services
-  ├── utils
-  └── views
-src/main/resources
-db/
-docs/
-```
+Copyright (c) 2026 Abdelrahman Benmoulai.
+All rights reserved.
 
-## Notes
-
-- Do not commit local runtime artifacts (`target/`, `logs/`, `uploads/`, local profile pictures).
-- `.gitignore` is already configured for first-commit safety.
+This repository is published for presentation/documentation purposes.
+No permission is granted to copy, modify, redistribute, or use this code in other projects without explicit written authorization from the author.
