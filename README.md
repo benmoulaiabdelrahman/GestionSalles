@@ -1,413 +1,200 @@
 # GestionSalles
 
-Comprehensive technical and product reference for a Java desktop platform that manages university room operations, reservation workflows, organizational entities, and account/session security.
+GestionSalles is a Java desktop information system for university room governance, reservation control, and role-scoped academic operations.
 
-## 1. Product Identity
+## Abstract
 
-GestionSalles is an internal university operations system centered on room governance.  
-It supports three roles:
+The platform centralizes institutional room planning through a layered architecture that combines Swing-based interfaces, service-driven business workflows, DAO-based persistence, and a MySQL relational model. The system enforces conflict-aware reservation processing, role-bounded visibility, authenticated session control, and auditable operational behavior.
 
-- `Admin`
-- `Chef_Departement`
-- `Enseignant`
+## Functional Domain Coverage
 
-Core objective:
+- Identity-aware access for `Admin`, `Chef_Departement`, and `Enseignant` roles
+- Reservation lifecycle management: create, update, search, filter, delete
+- Conflict-safe allocation across room, teacher, and level dimensions
+- Organizational entity administration: departments, blocs, levels, rooms, users
+- Role-scoped schedule visualization and timetable navigation
+- Password recovery, account security, and session continuity controls
+- Activity and audit visibility for operational monitoring
 
-- deliver conflict-safe room planning,
-- enforce role-scoped access and views,
-- maintain secure authentication/session behavior,
-- provide operational visibility through dashboards and activity tracking.
+## User Experience Model
 
-## 2. Business Scope
+- Swing desktop UI with FlatLaf styling
+- Card-based navigation to avoid multi-window fragmentation
+- Asynchronous processing (`SwingWorker`) for long-running actions
+- Validation-first form handling with contextual feedback
+- Confirmation-gated destructive actions
+- Data-table centric management with search, filtering, export, and print
 
-The system covers the following business domains:
+## Runtime Lifecycle
 
-- Reservation lifecycle management (create, update, delete, search, filter)
-- Room planning and schedule visualization
-- Organizational master data management:
-  - faculties/departments
-  - blocs
-  - niveaux
-  - rooms
-  - users
-- Security-aware access, password change, and password recovery workflows
-- Audit/recency feedback for operational monitoring
+### Startup Sequence
 
-## 3. User Experience Foundations
+1. Logging and UI theme initialization
+2. Database connectivity and schema validation
+3. Remember-me token authentication attempt
+4. Login screen fallback when token authentication is invalid
 
-Interface behavior principles implemented across screens:
+### Access Flows
 
-- Swing desktop UI with FlatLaf-based styling
-- card-style navigation and role-specific dashboard composition
-- confirmation gates for destructive actions
-- asynchronous background work using `SwingWorker` to keep UI responsive
-- validation feedback at form level (inline labels, contextual messages)
-- interactive management tables:
-  - search/filter
-  - row selection state-driven actions
-  - print/export support
-  - explicit no-result states
+- Credential login through `AuthService`
+- Remember-me token validation with active-session issuance
+- Role-based routing to dashboard context
+- Immediate fallback to login on invalid or expired token state
 
-## 4. Startup and Access Lifecycle
+### Session Revalidation
 
-### 4.1 Cold Start
+- Periodic session validity checks during active dashboard runtime
+- Forced logout on token invalidation, supersession, or security-triggered revocation
 
-Entry path: `Main.main`
+## Role-Specific Operational Boundaries
 
-High-level runtime sequence:
+### Admin
 
-1. initialize logging and theme context,
-2. validate DB connectivity and schema prerequisites,
-3. attempt remember-me token authentication,
-4. open login screen if token auth fails.
+- Global administrative scope
+- Full management modules: departments, rooms, levels, users, reservations
+- Broad schedule viewer filters and organization-wide analytics
 
-Failure handling:
+### Chef_Departement
 
-- unavailable DB or invalid schema -> startup abort with explicit dialog.
+- Department/bloc constrained scope
+- Managed access to reservations, rooms, users, and schedule views within assigned context
 
-### 4.2 Remember-Me Authentication
+### Enseignant
 
-Flow behavior:
+- Teacher-focused experience
+- Personal schedule orientation with reduced navigation complexity
 
-- token is loaded from local storage,
-- validated via `AuthService.authenticateWithToken(...)`,
-- if valid, a fresh active session is created and role dashboard is opened,
-- invalid/expired token is removed and login flow is shown.
+## Critical Workflow Specifications
 
-### 4.3 Login Experience
+### Password Recovery
 
-Primary login UI (`LoginPanel`) includes:
+Three-step recovery pipeline:
 
-- email input
-- password input
-- remember-me option
-- forgot-password flow entry
-- submit action with loading-state transition
+1. Email submission and verification-code issuance
+2. Code validation with expiry-bound lifecycle controls
+3. Password reset with mandatory session invalidation
 
-Authentication pattern:
+Security controls include rate-limiting, active-user checks, and bounded verification windows.
 
-- client-side validation first,
-- authentication off the EDT thread,
-- success routes to role-specific dashboard,
-- failure returns localized inline error feedback.
+### Reservation Processing
 
-## 5. Role Journeys
+Reservation orchestration includes:
 
-### 5.1 Admin
+- Dynamic form constraints (activity mode, recurrence, online/physical room context)
+- Server-side conflict verification before persistence
+- Structured conflict reporting for duplicate, single-conflict, and multi-conflict states
+- Blocked commit path until conflict-free validation is achieved
 
-Admin workflow includes:
+### Schedule Visualization
 
-- overview dashboard (KPIs + chart + recent activity)
-- management modules for departments, rooms, niveaux, users, reservations
-- schedule viewer with broader scope controls
-- export/print tooling in management/scheduling contexts
+- Multi-context filtering (`Salle`, `Enseignant`, `Niveau`) for privileged roles
+- Department-scoped variants for constrained roles
+- Identity-scoped teacher schedule rendering
+- Print and PDF export integrations
 
-Security behavior visible to Admin:
+## Architecture
 
-- periodic session revalidation (~60s),
-- forced logout on invalid session,
-- password policy enforcement (`mustChangePassword`) routed to account settings flow.
+### Layered Structure
 
-### 5.2 Chef_Departement
+1. Entry Layer: bootstrap and startup routing (`Main`, `MainApp`)
+2. Presentation Layer: role and shared UI modules (`views/*`)
+3. Service Layer: business orchestration (`services/*`)
+4. Data Access Layer: SQL gateways and mappings (`dao/*`, `database/*`)
+5. Domain Layer: business entities and enums (`models/*`)
+6. Infrastructure Layer: session/security/audit utilities (`utils/*`)
+7. Schema Layer: SQL schema, migrations, and seed assets (`db/*`)
 
-Chef role provides similar management and scheduling capabilities with scope restrictions:
+### Core Execution Path
 
-- data and actions constrained by department/bloc context,
-- role-filtered reservation and schedule operations,
-- dedicated dashboard behavior when bloc assignment is missing.
+1. UI interaction triggers application intent
+2. Service layer applies business validation and orchestration
+3. DAO layer executes relational operations
+4. Domain objects propagate back to the presentation layer
+5. UI state is refreshed on EDT with asynchronous work isolation
 
-### 5.3 Enseignant
+## Security Architecture
 
-Teacher workflow is intentionally simplified:
+### Authentication and Credential Safety
 
-- personal schedule focus,
-- reduced navigation complexity,
-- account settings access from dashboard header,
-- scoped print/PDF schedule outputs for own context.
+- Password hashing and verification through dedicated cryptographic utilities
+- Token and credential authentication entry points with role-consistent routing
+- Controlled handling of sensitive authentication data in runtime flows
 
-## 6. Detailed Feature Flows
+### Session Security
 
-### 6.1 Password Recovery (Three-Step Flow)
+- Active session persistence in `active_sessions`
+- Single active session policy per user identity
+- Constant-time token comparison for validation paths
+- Heartbeat-based session continuity checks
 
-Container: `PasswordRecoveryContainer`
+### Recovery Security
 
-Step 1 (email/code request):
+- Verification-code generation and expiry enforcement
+- Non-plaintext persisted verification state
+- Request/attempt protection to reduce brute-force risk
 
-- email validation,
-- rate-limiting checks,
-- user existence/active checks,
-- email-service readiness checks,
-- existing-valid-code protection.
+### Secret and Configuration Hardening
 
-Step 2 (code verification):
+Secret resolution precedence:
 
-- six-digit entry UX with paste and focus controls,
-- expiry countdown with state transitions,
-- invalid/expired/success outcomes.
+1. JVM property: `app.verification.secret`
+2. Environment variable: `GESTION_SALLES_SECRET`
+3. Local secure secret file: `~/.gestion-salles/app.secret`
 
-Step 3 (new password):
+Configuration hardening includes mandatory value checks, placeholder rejection, and insecure-default DB configuration rejection.
 
-- strength and confirm checks,
-- password update finalization,
-- session invalidation and return to login path.
+### Auditing
 
-### 6.2 Account Settings Password Change
+- Security-significant operations are tracked through `AuditLogger`
+- Recovery and password events are audit-visible for traceability
 
-Direct change flow behavior:
+## Data and Persistence Model
 
-- verify current password first,
-- enforce new-password validity/strength rules,
-- clear `mustChangePassword` on success,
-- invalidate current session after successful change.
+### Principal Domain Models
 
-Incorrect current-password attempts are capped, with fallback toward recovery path.
+- `User`, `Reservation`, `Room`, `Departement`, `Bloc`, `Niveau`
+- `ScheduleEntry`, `Conflict`, `ActivityLog`, `ActivityType`, `DashboardScope`, `ActivityItemData`
 
-### 6.3 Reservation Management
+### Principal Tables
 
-Shared Admin/Chef capabilities:
+- `utilisateurs`, `reservations`, `salles`, `niveaux`, `blocs`, `departements`
+- `activity_log`, `audit_log`, `active_sessions`, `verification_codes`
 
-- debounce search and multidimensional filters,
-- table-based selection actions,
-- batch deletion with confirmation,
-- print and spreadsheet export behavior,
-- visual differentiation for past reservations.
-
-Reservation dialog dynamics:
-
-- adaptive form sections based on activity/recurrence/online mode,
-- organizational and pedagogical selectors,
-- recurrence-specific validation,
-- Friday and invalid recurrence constraints,
-- group-specific activity requirements.
-
-Conflict control:
-
-- pre-save conflict checks via conflict service + DB procedures,
-- duplicate/single/multi-conflict dialog patterns,
-- optional path to inspect conflicting reservation,
-- save operation blocked until conflict-free.
-
-### 6.4 Schedule Viewer
-
-Admin schedule viewer supports broader filtering by:
-
-- context type (`Salle`, `Enseignant`, `Niveau`)
-- faculty/department scope
-- specific entity and date
-- full-week mode
-
-Chef viewer applies equivalent behavior inside constrained scope.
-
-Enseignant viewer (`MySchedulePanel`) is automatically identity-scoped and supports day/week, print, and PDF export.
-
-## 7. Dashboard and Activity Model
-
-Overview KPIs include:
-
-- room count
-- active user count
-- reservations for today
-- rooms currently in use
-
-Recent activity panel behavior:
-
-- icon/profile + textual summary + relative time formatting,
-- Admin sees global activity slice,
-- Chef sees bloc-scoped activity slice.
-
-## 8. Architecture
-
-### 8.1 Layered Structure
-
-GestionSalles follows a layered architecture with strong package-level separation:
-
-1. Entry/Bootstrap layer
-2. Presentation layer
-3. Application service layer
-4. Data access layer
-5. Domain model layer
-6. Infrastructure/utilities layer
-7. Schema/procedure layer
-
-### 8.2 Layer Responsibilities
-
-Entry and bootstrap:
-
-- `Main`, `MainApp`
-- startup orchestration, validation, and initial routing
-
-Presentation (`views/*`):
-
-- role dashboards, dialogs, management pages, shared UI components
-- user interaction and UI-state orchestration
-
-Services (`services/*`):
-
-- authentication logic
-- verification-code management
-- email integration orchestration
-- conflict-detection orchestration
-
-Persistence (`dao/*`, `database/*`):
-
-- SQL operations, mappings, and retrieval/update paths
-- centralized database connection/config handling
-
-Domain (`models/*`):
-
-- entities and enums for core business concepts
-
-Utilities (`utils/*`):
-
-- session context and token lifecycle helpers
-- security and secret support classes
-- audit and reusable UI utilities
-
-Schema/SQL (`db/*`):
-
-- schema assets, conflict procedures, seed data
-
-### 8.3 Runtime Flow
-
-Standard execution flow:
-
-1. UI event triggered in presentation layer,
-2. service validates and coordinates the operation,
-3. DAO executes DB operations,
-4. model objects returned to service/UI,
-5. UI updated on EDT, with long tasks offloaded to background workers.
-
-## 9. Security Model
-
-### 9.1 Authentication and Credential Handling
-
-- password hashing/verification through dedicated utilities (`PasswordUtils`)
-- remember-me token authentication support with DB session creation on success
-- sensitive in-memory handling patterns in auth/recovery code paths
-
-### 9.2 Session Security
-
-- active session persistence in `active_sessions`
-- single active session per user email
-- session token comparisons use constant-time techniques
-- periodic heartbeat/revalidation in dashboard runtime
-- forced logout on invalidated or superseded sessions
-
-### 9.3 Recovery Code Security
-
-- six-digit verification code lifecycle
-- hashed persistence (not plaintext storage)
-- expiry enforcement with both server-side logic and user-visible countdown
-- request/attempt controls to reduce abuse patterns
-
-### 9.4 Secret Management
-
-Verification secret resolution order:
-
-1. JVM property `app.verification.secret`
-2. env var `GESTION_SALLES_SECRET`
-3. secure file `~/.gestion-salles/app.secret`
-
-Token/secret files use hardened local storage behavior where supported.
-
-### 9.5 Configuration Hardening
-
-Database and email configuration are environment-first with strict checks:
-
-- required values must be present and non-placeholder,
-- insecure DB default combinations are rejected,
-- invalid runtime config fails fast.
-
-### 9.6 Auditing
-
-Security-significant events are logged through audit facilities (`AuditLogger`) to improve traceability of sensitive operations.
-
-## 10. Data Model and Schema
-
-### 10.1 Main Domain Models
-
-- `User`
-- `Reservation`
-- `Room`
-- `Departement`
-- `Bloc`
-- `Niveau`
-- `ScheduleEntry`
-- `Conflict`
-- `ActivityLog`
-- `ActivityType`
-- `DashboardScope`
-- `ActivityItemData`
-
-### 10.2 Key Tables
-
-- `utilisateurs`
-- `reservations`
-- `salles`
-- `niveaux`
-- `blocs`
-- `departements`
-- `activity_log`
-- `audit_log`
-- `active_sessions`
-- `verification_codes`
-
-### 10.3 Conflict Procedures
-
-Runtime conflict checks rely on stored procedures:
+### Conflict Procedures
 
 - `verifier_conflit_salle`
 - `verifier_conflit_enseignant`
 - `verifier_conflit_niveau`
 
-### 10.4 SQL Assets
+### SQL Assets
 
 - `db/schema.sql`
 - `db/migrations/001_conflict_procedures.sql`
 - `db/seed/minimal_seed.sql`
 - `gestion_salles.sql`
 
-## 11. Technical Inventory
+## Technical Component Inventory
 
-### 11.1 DAO Modules
+### DAO Layer
 
-- `ActivityLogDAO`
-- `ActivityTypeDAO`
-- `BlocDAO`
-- `DashboardDAO`
-- `DepartementDAO`
-- `NiveauDAO`
-- `ReservationDAO`
-- `ReservationMapper`
-- `ReservationConflictException`
-- `RoomDAO`
-- `ScheduleDAO`
-- `UserDAO`
+- `ActivityLogDAO`, `ActivityTypeDAO`, `BlocDAO`, `DashboardDAO`, `DepartementDAO`
+- `NiveauDAO`, `ReservationDAO`, `ReservationMapper`, `ReservationConflictException`
+- `RoomDAO`, `ScheduleDAO`, `UserDAO`
 
-### 11.2 Service Modules
+### Service Layer
 
 - `AuthService`
 - `ConflictDetectionService`
 - `EmailService`
 - `VerificationCodeManager`
 
-### 11.3 Utilities
+### Infrastructure and Utilities
 
-- `AppConfig`
-- `SessionManager`
-- `SessionContext`
-- `TokenStorage`
-- `SecretManager`
-- `AuditLogger`
-- `PasswordUtils`
-- `PasswordStrengthChecker`
-- `PasswordFormHelper`
-- `HealthCheck`
-- and additional reusable UI/infra helpers under `utils/`
+- `AppConfig`, `SessionManager`, `SessionContext`, `TokenStorage`, `SecretManager`
+- `AuditLogger`, `PasswordUtils`, `PasswordStrengthChecker`, `PasswordFormHelper`, `HealthCheck`
+- Additional UI/infra support classes in `utils/`
 
-### 11.4 View Modules
-
-Major view families:
+### Presentation Packages
 
 - `views/Admin/*`
 - `views/ChefDepartement/*`
@@ -415,9 +202,9 @@ Major view families:
 - `views/Login/*`
 - `views/shared/*`
 
-## 12. Testing and Quality
+## Quality and Test Coverage
 
-Current test suites include:
+Representative test suites:
 
 - `ReservationDAOTest`
 - `DatabaseConnectionTest`
@@ -427,75 +214,42 @@ Current test suites include:
 - `DashboardDevTest`
 - `LoginFlowDevTest`
 
-Quality characteristics:
+Quality posture:
 
-- domain/service/DAO tests cover core logic,
-- dev/UI tests exist for important UI flows,
-- runtime quality depends on valid database and environment configuration.
+- Coverage targets service and persistence logic plus selected UI/dev flows
+- Runtime robustness depends on valid environment and database provisioning
 
-## 13. Build, Packaging, and Runtime Operations
+## Build and Packaging Profile
 
-### 13.1 Build Tooling
+- Build system: Maven
+- Packaging includes shaded runtime artifact generation
+- Installer profile support for desktop distribution targets
+- Operational scripts for icon extraction, post-install setup, and health checks
 
-Build system: Maven with compiler, test, shading, execution, and packaging plugins.
+## Repository Structure
 
-### 13.2 Dependency Families
-
-Project integrates the following categories:
-
-- database/connectivity (MySQL connector, HikariCP)
-- security (BCrypt)
-- UI/look-and-feel (FlatLaf, layout/tooling)
-- document export (POI, PDFBox)
-- serialization/config/logging support
-
-### 13.3 Artifacts and Profiles
-
-Primary generated artifacts:
-
-- `GestionSalles-1.0-SNAPSHOT.jar`
-- `GestionSalles-1.0-SNAPSHOT-shaded.jar`
-
-Packaging profiles are configured for installer targets (including Linux packaging assets).
-
-### 13.4 Operational Scripts
-
-- `extract-icons.sh`
-- `post-install.sh`
-- `scripts/health-check.sh`
-- `src/main/resources/scripts/gestionsalles.sh`
-- `src/main/resources/scripts/health-check.sh`
-
-## 14. Repository Structure
-
-- `src/main/java/com/gestion/salles`: application source code
-- `src/main/resources`: icons/config templates/runtime scripts
+- `src/main/java/com/gestion/salles`: application source
+- `src/main/resources`: icons, configuration templates, runtime scripts
 - `src/test/java/com/gestion/salles`: test suites
-- `db/`: schema/migration/seed SQL assets
-- `docs/`: focused subsystem documentation
-- `APP_FULL_REFERENCE.md`: full UX and technical reference source
+- `db/`: schema, migration, and seed SQL assets
+- `docs/`: subsystem-specific technical notes
+- `APP_FULL_REFERENCE.md`: full product and UX reference baseline
 
-## 15. Documentation Cross-References
+## Architecture Diagram
+
+![GestionSalles Layered Architecture](docs/screenshots/architecture-layering.png)
+
+## Documentation References
 
 - `APP_FULL_REFERENCE.md`
 - `docs/security-and-session.md`
 - `docs/database.md`
 - `docs/packaging.md`
 
-## 16. Architecture Diagram
+## Intellectual Property and Usage Restrictions
 
-Place your architecture PNG here:
-
-- `docs/screenshots/architecture-layering.png`
-
-Rendered:
-
-![GestionSalles Architecture](docs/screenshots/architecture-layering.png)
-
-## 17. Copyright and Usage
-
-Copyright (c) 2026 Abdelrahman Benmoulai.  
+Copyright (c) 2026 Abdelrahman Benmoulai.
 All rights reserved.
 
-This repository is published for presentation, review, and documentation purposes only.  
-No permission is granted to copy, reuse, modify, redistribute, or integrate this codebase (in whole or in part) into other projects without explicit prior written authorization from the author.
+This repository is published for documentation and evaluation purposes only.
+No right is granted to copy, reuse, modify, redistribute, or integrate any part of this codebase into another work without explicit prior written authorization from the copyright holder.
