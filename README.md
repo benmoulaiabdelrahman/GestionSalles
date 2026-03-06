@@ -1,6 +1,6 @@
-# GestionSalles
+# Gestion Salles
 
-GestionSalles is a Java desktop platform for university room governance, reservation scheduling, and role-scoped academic operations.
+Gestion Salles is a Java desktop platform for university room governance, reservation scheduling, and role-scoped academic operations.
 
 ## Overview
 
@@ -20,7 +20,7 @@ It provides:
 
 ## Architecture Summary
 
-GestionSalles uses a layered architecture:
+Gestion Salles uses a layered architecture:
 
 1. Presentation layer: `views/*`
 2. Service layer: `services/*`
@@ -57,7 +57,7 @@ GestionSalles uses a layered architecture:
 
 ### Layered Architecture
 
-![GestionSalles Layered Architecture](docs/screenshots/architecture-layering.png)
+![Gestion Salles Layered Architecture](docs/screenshots/architecture-layering.png)
 
 ## Full Technical Reference
 
